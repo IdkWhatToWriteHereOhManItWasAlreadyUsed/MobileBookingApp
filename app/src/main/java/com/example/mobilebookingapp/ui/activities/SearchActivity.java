@@ -14,6 +14,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.example.mobilebookingapp.R;
 import com.example.mobilebookingapp.network.HotelsLoader;
+import com.example.mobilebookingapp.network.NetworkUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -80,6 +81,10 @@ public class SearchActivity extends AppCompatActivity {
 
     private void performSearch() {
         // Собираем параметры поиска
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            Toast.makeText(this, "Нет подключения к интернету", Toast.LENGTH_LONG).show();
+            return;
+        }
         Map<String, String> searchParams = new HashMap<>();
 
         String hotelName = etHotelName.getText().toString().trim();

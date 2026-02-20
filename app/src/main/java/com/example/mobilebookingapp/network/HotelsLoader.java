@@ -1,5 +1,8 @@
 package com.example.mobilebookingapp.network;
 
+import android.content.Context;
+
+import com.example.mobilebookingapp.caching.CacheManager;
 import com.example.mobilebookingapp.model.HotelData;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -163,5 +166,18 @@ public class HotelsLoader {
     @Deprecated
     public static List<HotelData> searchByName(String name) {
         return searchHotels(null, null, null, name, null, null, null, null);
+    }
+
+    public static List<HotelData> loadFromCache(Context context) {
+        CacheManager cacheManager = new CacheManager(context);
+        return cacheManager.getHotels();
+    }
+
+    /**
+     * Сохранить в кэш
+     */
+    public static void saveToCache(Context context, List<HotelData> hotels) {
+        CacheManager cacheManager = new CacheManager(context);
+        cacheManager.saveHotels(hotels);
     }
 }
