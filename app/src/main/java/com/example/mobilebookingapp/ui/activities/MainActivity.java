@@ -1,6 +1,6 @@
 package com.example.mobilebookingapp.ui.activities;
 
-import android.content.Context;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -19,6 +19,7 @@ import com.example.mobilebookingapp.model.HotelData;
 import com.example.mobilebookingapp.network.HotelsLoader;
 import com.example.mobilebookingapp.caching.CacheManager;
 import com.example.mobilebookingapp.network.NetworkUtils;
+import com.example.mobilebookingapp.utils.SortUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -32,7 +33,9 @@ public class MainActivity extends AppCompatActivity {
     private HotelAdapter adapter;
     private List<HotelData> hotelList;
     private MaterialButton btnSearch;
+    private MaterialButton btnSort;
     private CacheManager cacheManager;
+    private SortUtils.SortBy currentSort = SortUtils.SortBy.RATING_DESC; // По умолчанию
 
     private final ActivityResultLauncher<Intent> searchLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -57,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         btnSearch = findViewById(R.id.btnSearch);
+        btnSort = findViewById(R.id.btnSort);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -81,8 +85,56 @@ public class MainActivity extends AppCompatActivity {
             searchLauncher.launch(intent);
         });
 
+        btnSort.setOnClickListener(v -> showSortDialog());
+
         // Загружаем данные при старте
         loadInitialData();
+    }
+
+    private void showSortDialog() {
+        String[] sortOptions = {
+                SortUtils.getSortDisplayName(SortUtils.SortBy.NAME_ASC),
+                SortUtils.getSortDisplayName(SortUtils.SortBy.NAME_DESC),
+                SortUtils.getSortDisplayName(SortUtils.SortBy.RATING_ASC),
+                SortUtils.getSortDisplayName(SortUtils.SortBy.RATING_DESC)
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Сортировать отели")
+                .setItems(sortOptions, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            currentSort = SortUtils.SortBy.NAME_ASC;
+                            break;
+                        case 1:
+                            currentSort = SortUtils.SortBy.NAME_DESC;
+                            break;
+                        case 2:
+                            currentSort = SortUtils.SortBy.RATING_ASC;
+                            break;
+                        case 3:
+                            currentSort = SortUtils.SortBy.RATING_DESC;
+                            break;
+                    }
+                    applySort();
+                })
+                .show();
+    }
+
+    private void applySort() {
+        if (hotelList.isEmpty()) {
+            Toast.makeText(this, "Нет отелей для сортировки", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Сортируем список
+        SortUtils.sortHotels(hotelList, currentSort);
+        adapter.notifyDataSetChanged();
+
+        // Показываем уведомление
+        Snackbar.make(findViewById(android.R.id.content),
+                "Отсортировано: " + SortUtils.getSortDisplayName(currentSort),
+                Snackbar.LENGTH_SHORT).show();
     }
 
     /**
@@ -94,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
         if (!cachedHotels.isEmpty()) {
             hotelList.clear();
             hotelList.addAll(cachedHotels);
-            adapter.notifyDataSetChanged();
+            applySort(); // Сортируем при загрузке
 
             String cacheInfo = "Загружено из кэша";
             if (cacheManager.isCacheExpired()) {
@@ -125,37 +177,37 @@ public class MainActivity extends AppCompatActivity {
      * Обновление данных из сети
      */
     private void refreshDataFromNetwork() {
-        // Например, загружаем отели по умолчанию (Мадрид)
-        HotelsLoader.searchByCityAsync("Madrid", new HotelsLoader.HotelsCallback() {
-            @Override
-            public void onSuccess(List<HotelData> hotels) {
-                runOnUiThread(() -> {
-                    if (!hotels.isEmpty()) {
-                        // Обновляем список
-                        hotelList.clear();
-                        hotelList.addAll(hotels);
-                        adapter.notifyDataSetChanged();
+        HotelsLoader.searchHotelsAsync(null, null, null, null, null, null, 20, null,
+                new HotelsLoader.HotelsCallback() {
+                    @Override
+                    public void onSuccess(List<HotelData> hotels) {
+                        runOnUiThread(() -> {
+                            if (!hotels.isEmpty()) {
+                                // Обновляем список
+                                hotelList.clear();
+                                hotelList.addAll(hotels);
+                                applySort(); // Сортируем новые данные
 
-                        // Сохраняем в кэш
-                        cacheManager.saveHotels(hotels);
+                                // Сохраняем в кэш
+                                cacheManager.saveHotels(hotels);
 
-                        Toast.makeText(MainActivity.this,
-                                "Данные обновлены из сети", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(MainActivity.this,
+                                        "Данные обновлены из сети", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        runOnUiThread(() -> {
+                            // Если ошибка, но у нас уже есть кэш - ничего не делаем
+                            if (!cacheManager.hasCache()) {
+                                Toast.makeText(MainActivity.this,
+                                        "Ошибка загрузки: " + error, Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                 });
-            }
-
-            @Override
-            public void onError(String error) {
-                runOnUiThread(() -> {
-                    // Если ошибка, но у нас уже есть кэш - ничего не делаем
-                    if (!cacheManager.hasCache()) {
-                        Toast.makeText(MainActivity.this,
-                                "Ошибка загрузки: " + error, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
     }
 
     private void performSearchWithParams(Map<String, String> params) {
@@ -165,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
             if (!cachedHotels.isEmpty()) {
                 hotelList.clear();
                 hotelList.addAll(cachedHotels);
-                adapter.notifyDataSetChanged();
+                applySort();
                 Toast.makeText(this, "Оффлайн-режим: показаны кэшированные данные",
                         Toast.LENGTH_SHORT).show();
             } else {
@@ -192,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(() -> {
                             hotelList.clear();
                             hotelList.addAll(hotels);
-                            adapter.notifyDataSetChanged();
+                            applySort(); // Сортируем результаты поиска
 
                             // Сохраняем результат поиска в кэш
                             if (!hotels.isEmpty()) {
@@ -214,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                             if (!cachedHotels.isEmpty()) {
                                 hotelList.clear();
                                 hotelList.addAll(cachedHotels);
-                                adapter.notifyDataSetChanged();
+                                applySort();
                                 Toast.makeText(MainActivity.this,
                                         "Ошибка сети. Показаны кэшированные данные",
                                         Toast.LENGTH_SHORT).show();
@@ -228,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showNoInternetDialog() {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("Нет интернета")
                 .setMessage("Для поиска отелей необходимо подключение к интернету. Хотите посмотреть сохраненные данные?")
                 .setPositiveButton("Показать кэш", (dialog, which) -> {
@@ -236,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
                     if (!cachedHotels.isEmpty()) {
                         hotelList.clear();
                         hotelList.addAll(cachedHotels);
-                        adapter.notifyDataSetChanged();
+                        applySort();
                         Toast.makeText(this, "Показаны кэшированные данные",
                                 Toast.LENGTH_SHORT).show();
                     } else {

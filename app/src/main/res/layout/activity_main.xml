@@ -16,17 +16,38 @@
         app:titleTextColor="@android:color/white"
         app:menu="@menu/main_menu" />
 
-    <!-- Кнопка поиска -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSearch"
+    <!-- Панель с кнопками поиска и сортировки -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="Поиск отелей"
-        android:textSize="16sp"
-        app:icon="@android:drawable/ic_menu_search"
-        app:iconGravity="textStart"
-        style="@style/Widget.Material3.Button.OutlinedButton"/>
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center_vertical">
+
+        <!-- Кнопка поиска (растягивается) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSearch"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Поиск отелей"
+            android:textSize="14sp"
+            android:layout_marginEnd="4dp"
+            app:icon="@android:drawable/ic_menu_search"
+            app:iconGravity="textStart"
+            style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+        <!-- Кнопка сортировки -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSort"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="4dp"
+            app:icon="@android:drawable/ic_menu_sort_by_size"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            style="@style/Widget.Material3.Button.IconButton"/>
+    </LinearLayout>
 
     <!-- Список отелей -->
     <androidx.recyclerview.widget.RecyclerView
