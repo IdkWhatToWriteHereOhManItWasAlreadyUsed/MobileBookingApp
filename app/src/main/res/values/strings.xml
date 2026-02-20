@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Бронирование отелей</string>
+    <string name="hotels">Отели</string>
+    <string name="settings">Настройки</string>
+    <string name="hotel">Отель</string>
+    <string name="book">Забронировать</string>
+    <string name="loading">Загрузка…</string>
+    <string name="description">Описание</string>
+    <string name="booked">Забронировано!</string>
+</resources>
