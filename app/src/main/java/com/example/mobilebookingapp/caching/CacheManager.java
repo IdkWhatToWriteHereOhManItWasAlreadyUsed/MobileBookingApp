@@ -22,9 +22,6 @@ public class CacheManager {
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
-    /**
-     * Сохранить отели в кэш
-     */
     public void saveHotels(List<HotelData> hotels) {
         String json = gson.toJson(hotels);
         prefs.edit()
@@ -33,9 +30,6 @@ public class CacheManager {
                 .apply();
     }
 
-    /**
-     * Получить отели из кэша
-     */
     public List<HotelData> getHotels() {
         String json = prefs.getString(KEY_HOTELS, null);
         if (json == null) {
@@ -52,30 +46,19 @@ public class CacheManager {
         }
     }
 
-    /**
-     * Проверить, есть ли кэш
-     */
+
     public boolean hasCache() {
         return prefs.contains(KEY_HOTELS);
     }
 
-    /**
-     * Получить время последнего обновления кэша
-     */
     public long getCacheTimestamp() {
         return prefs.getLong(KEY_TIMESTAMP, 0);
     }
 
-    /**
-     * Очистить кэш
-     */
     public void clearCache() {
         prefs.edit().clear().apply();
     }
 
-    /**
-     * Проверить, устарел ли кэш (например, старше 24 часов)
-     */
     public boolean isCacheExpired() {
         long cacheTime = getCacheTimestamp();
         long currentTime = System.currentTimeMillis();

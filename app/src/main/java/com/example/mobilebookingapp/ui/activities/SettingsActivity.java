@@ -19,8 +19,6 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Применяем текущую тему (она уже должна быть установлена из Splash,
-        // но на всякий случай перепроверим)
         sharedPreferences = getSharedPreferences("app_settings", MODE_PRIVATE);
         boolean isDarkMode = sharedPreferences.getBoolean("dark_mode", false);
 
@@ -31,8 +29,6 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_settings);
-
-        // Настройка тулбара
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -41,8 +37,6 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         themeSwitch = findViewById(R.id.themeSwitch);
-
-        // Устанавливаем положение переключателя в соответствии с сохраненной темой
         themeSwitch.setChecked(isDarkMode);
 
         themeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -57,9 +51,6 @@ public class SettingsActivity extends AppCompatActivity {
                 } else {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
                 }
-
-                // Не перезапускаем ничего, просто применяем тему
-                // Все открытые Activity должны перерисоваться с новой темой
             }
         });
     }

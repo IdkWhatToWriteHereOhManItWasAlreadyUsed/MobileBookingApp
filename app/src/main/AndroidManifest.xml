@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:allowBackup="true"
@@ -14,8 +15,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MobileBookingApp"
         >
-
-        <!-- SplashActivity теперь главная -->
         <activity
             android:name=".ui.activities.SplashActivity"
             android:exported="true"
@@ -26,10 +25,9 @@
             </intent-filter>
         </activity>
 
-        <!-- MainActivity теперь не лаунчер -->
         <activity
             android:name=".ui.activities.MainActivity"
-            android:exported="false" /> <!-- было true, меняем на false -->
+            android:exported="false" />
 
         <activity android:name=".ui.activities.SearchActivity" />
         <activity android:name=".ui.activities.HotelDetailActivity" />

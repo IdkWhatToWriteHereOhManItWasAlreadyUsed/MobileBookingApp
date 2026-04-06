@@ -40,16 +40,10 @@ public class HotelAdapter extends RecyclerView.Adapter<HotelAdapter.HotelViewHol
     @Override
     public void onBindViewHolder(@NonNull HotelViewHolder holder, int position) {
         HotelData hotel = hotels.get(position);
-
         holder.nameTextView.setText(hotel.getName());
         holder.descriptionTextView.setText(hotel.getDescription());
-
-        // Конвертируем int рейтинг в float для RatingBar
         holder.ratingBar.setRating(hotel.getRating());
-
-        // TODO: загружать реальные картинки через Glide/Picasso
         holder.imageView.setImageResource(getImageForHotel(hotel));
-
         holder.itemView.setOnClickListener(v -> listener.onItemClick(hotel));
     }
 
@@ -59,7 +53,6 @@ public class HotelAdapter extends RecyclerView.Adapter<HotelAdapter.HotelViewHol
     }
 
     private int getImageForHotel(HotelData hotel) {
-        // Временная заглушка для картинок
         int hash = hotel.getName().hashCode();
         switch (Math.abs(hash) % 4) {
             case 0: return android.R.drawable.ic_menu_gallery;

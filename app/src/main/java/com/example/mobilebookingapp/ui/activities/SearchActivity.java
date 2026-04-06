@@ -80,7 +80,6 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void performSearch() {
-        // Собираем параметры поиска
         if (!NetworkUtils.isNetworkAvailable(this)) {
             Toast.makeText(this, "Нет подключения к интернету", Toast.LENGTH_LONG).show();
             return;
@@ -118,14 +117,11 @@ public class SearchActivity extends AppCompatActivity {
                 int limit = Integer.parseInt(limitStr);
                 searchParams.put("limit", String.valueOf(limit));
             } catch (NumberFormatException e) {
-                // игнорируем
             }
         }
 
-        // Показываем прогресс
         showLoading(true);
 
-        // Отправляем параметры обратно в MainActivity
         Intent resultIntent = new Intent();
         resultIntent.putExtra(EXTRA_SEARCH_PARAMS, (HashMap) searchParams);
         setResult(RESULT_OK, resultIntent);

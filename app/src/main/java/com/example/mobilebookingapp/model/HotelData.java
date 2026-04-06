@@ -4,6 +4,7 @@ import android.os.Build;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 public class HotelData implements Serializable {
@@ -13,13 +14,12 @@ public class HotelData implements Serializable {
     private String country;
     private String country_code;
     private String address;
-    private int rating;  // теперь int (0-5)
+    private int rating;
     private double lat;
     private double lng;
     private List<String> amenities;
     private String imageUrl;
-
-    // Геттеры и сеттеры
+    
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -53,30 +53,36 @@ public class HotelData implements Serializable {
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
-    // Для совместимости со старым кодом
+    private String _description = "";
     public String getDescription() {
-        String input = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, ";
-        String[] words = input.split(" ");
+        if (Objects.equals(_description, ""))
+        {
+            String input = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, ";
+            String[] words = input.split(" ");
 
-        Random random = new Random();
+            Random random = new Random();
 
-        String randomWord = words[random.nextInt(words.length)];
+            String randomWord = words[random.nextInt(words.length)];
 
-        StringBuilder result = new StringBuilder();
-        int numberOfWords = 10;
+            StringBuilder result = new StringBuilder();
+            int numberOfWords = 10;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            numberOfWords = random.nextInt(10, 20);
-        }
-
-        for (int i = 0; i < numberOfWords; i++) {
-            result.append(words[random.nextInt(words.length)]);
-            if (i < numberOfWords - 1) {
-                result.append(" ");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                numberOfWords = random.nextInt(10, 20);
             }
+
+            for (int i = 0; i < numberOfWords; i++) {
+                result.append(words[random.nextInt(words.length)]);
+                if (i < numberOfWords - 1) {
+                    result.append(" ");
+                }
+            }
+
+            _description = result.toString();
         }
 
-        return  result.toString();
+
+        return  _description;
     }
 
     public int getImageResId() {

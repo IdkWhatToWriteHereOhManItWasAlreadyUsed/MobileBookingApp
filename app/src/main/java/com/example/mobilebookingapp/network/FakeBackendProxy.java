@@ -11,9 +11,6 @@ public class FakeBackendProxy {
     private static final String BASE_URL = "https://api.hotels-api.com/v1";
     private static final OkHttpClient client = new OkHttpClient();
 
-    /**
-     * Поиск отелей с фильтрами
-     */
     public static String searchHotels(String city, String country, String countryCode,
                                       String name, Integer rating, Integer minRating,
                                       Integer limit, Integer page) throws IOException {
@@ -44,7 +41,6 @@ public class FakeBackendProxy {
             url.append("page=").append(page).append("&");
         }
 
-        // Удаляем последний & если есть
         String finalUrl = url.toString();
         if (finalUrl.endsWith("&")) {
             finalUrl = finalUrl.substring(0, finalUrl.length() - 1);
@@ -63,16 +59,10 @@ public class FakeBackendProxy {
         }
     }
 
-    /**
-     * Упрощенный метод для поиска по городу
-     */
     public static String searchHotelsByCity(String city) throws IOException {
         return searchHotels(city, null, null, null, null, null, null, null);
     }
 
-    /**
-     * Тестовый JSON соответствующий примеру API
-     */
     public static String getTestHotelsJson() {
         return "{"
                 + "  \"success\": true,"

@@ -2,6 +2,8 @@ package com.example.mobilebookingapp.ui.activities;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +21,7 @@ import com.example.mobilebookingapp.model.HotelData;
 import com.example.mobilebookingapp.network.HotelsLoader;
 import com.example.mobilebookingapp.caching.CacheManager;
 import com.example.mobilebookingapp.network.NetworkUtils;
+import com.example.mobilebookingapp.utils.ReminderManager;
 import com.example.mobilebookingapp.utils.SortUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -28,7 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-
+    private static final int PERMISSION_REQUEST_CODE = 100;
+    private ReminderManager reminderManager;
     private RecyclerView recyclerView;
     private HotelAdapter adapter;
     private List<HotelData> hotelList;
@@ -63,6 +67,18 @@ public class MainActivity extends AppCompatActivity {
         btnSort = findViewById(R.id.btnSort);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        reminderManager = new ReminderManager(this);
+        reminderManager.updateLastActiveTime();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                        PERMISSION_REQUEST_CODE
+                );
+            }
+        }
 
         // Инициализация кэша
         cacheManager = new CacheManager(this);
@@ -127,35 +143,27 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Сортируем список
         SortUtils.sortHotels(hotelList, currentSort);
         adapter.notifyDataSetChanged();
 
-        // Показываем уведомление
         Snackbar.make(findViewById(android.R.id.content),
                 "Отсортировано: " + SortUtils.getSortDisplayName(currentSort),
                 Snackbar.LENGTH_SHORT).show();
     }
 
-    /**
-     * Загрузка начальных данных: сначала кэш, потом попытка обновить из сети
-     */
     private void loadInitialData() {
-        // 1. Сначала показываем кэшированные данные (если есть)
         List<HotelData> cachedHotels = cacheManager.getHotels();
         if (!cachedHotels.isEmpty()) {
             hotelList.clear();
             hotelList.addAll(cachedHotels);
-            applySort(); // Сортируем при загрузке
+            applySort();
 
             String cacheInfo = "Загружено из кэша";
             if (cacheManager.isCacheExpired()) {
                 cacheInfo += " (кэш устарел)";
             }
-            Toast.makeText(this, cacheInfo, Toast.LENGTH_SHORT).show();
         }
 
-        // 2. Если есть интернет - пробуем обновить данные
         if (NetworkUtils.isNetworkAvailable(this)) {
             refreshDataFromNetwork();
         } else {
@@ -173,9 +181,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Обновление данных из сети
-     */
     private void refreshDataFromNetwork() {
         HotelsLoader.searchHotelsAsync(null, null, null, null, null, null, 20, null,
                 new HotelsLoader.HotelsCallback() {
@@ -183,14 +188,11 @@ public class MainActivity extends AppCompatActivity {
                     public void onSuccess(List<HotelData> hotels) {
                         runOnUiThread(() -> {
                             if (!hotels.isEmpty()) {
-                                // Обновляем список
                                 hotelList.clear();
                                 hotelList.addAll(hotels);
-                                applySort(); // Сортируем новые данные
+                                applySort();
 
-                                // Сохраняем в кэш
                                 cacheManager.saveHotels(hotels);
-
                                 Toast.makeText(MainActivity.this,
                                         "Данные обновлены из сети", Toast.LENGTH_SHORT).show();
                             }
@@ -244,9 +246,8 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(() -> {
                             hotelList.clear();
                             hotelList.addAll(hotels);
-                            applySort(); // Сортируем результаты поиска
+                            applySort();
 
-                            // Сохраняем результат поиска в кэш
                             if (!hotels.isEmpty()) {
                                 cacheManager.saveHotels(hotels);
                             }
@@ -261,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onError(String error) {
                         runOnUiThread(() -> {
-                            // При ошибке показываем кэш
                             List<HotelData> cachedHotels = cacheManager.getHotels();
                             if (!cachedHotels.isEmpty()) {
                                 hotelList.clear();
@@ -283,14 +283,12 @@ public class MainActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Нет интернета")
                 .setMessage("Для поиска отелей необходимо подключение к интернету. Хотите посмотреть сохраненные данные?")
-                .setPositiveButton("Показать кэш", (dialog, which) -> {
+                .setPositiveButton("Показать сохраненные данные", (dialog, which) -> {
                     List<HotelData> cachedHotels = cacheManager.getHotels();
                     if (!cachedHotels.isEmpty()) {
                         hotelList.clear();
                         hotelList.addAll(cachedHotels);
                         applySort();
-                        Toast.makeText(this, "Показаны кэшированные данные",
-                                Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(this, "Нет сохраненных данных",
                                 Toast.LENGTH_SHORT).show();
@@ -317,5 +315,26 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (reminderManager != null) {
+            reminderManager.updateLastActiveTime();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (reminderManager != null) {
+            reminderManager.updateLastActiveTime();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }

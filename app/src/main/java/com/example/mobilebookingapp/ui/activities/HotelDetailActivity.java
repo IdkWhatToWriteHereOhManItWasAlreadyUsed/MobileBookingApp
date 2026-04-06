@@ -36,7 +36,6 @@ public class HotelDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Инициализация view
         ImageView imageView = findViewById(R.id.imageView);
         TextView nameView = findViewById(R.id.nameTextView);
         TextView addressView = findViewById(R.id.addressTextView);
@@ -46,32 +45,24 @@ public class HotelDetailActivity extends AppCompatActivity {
         TextView descriptionView = findViewById(R.id.descriptionTextView);
         Button bookButton = findViewById(R.id.bookButton);
 
-        // Заполняем данными
         nameView.setText(hotel.getName());
         addressView.setText(hotel.getAddress());
         ratingBar.setRating(hotel.getRating());
         ratingText.setText(String.valueOf(hotel.getRating()) + " / 5");
         descriptionView.setText(hotel.getDescription());
 
-        // Заглушка для картинки
         imageView.setImageResource(android.R.drawable.ic_menu_gallery);
 
-        // Добавляем чипсы с удобствами
         if (hotel.getAmenities() != null && !hotel.getAmenities().isEmpty()) {
             for (String amenity : hotel.getAmenities()) {
                 Chip chip = new Chip(this);
-
-                // Форматируем название удобства (wifi -> Wi-Fi, gym -> Спортзал)
                 String displayName = formatAmenityName(amenity);
                 chip.setText(displayName);
-
-                chip.setClickable(false); // Просто для отображения, не нажимается
+                chip.setClickable(false);
                 chip.setCheckable(false);
-
                 amenitiesChipGroup.addView(chip);
             }
         } else {
-            // Если нет удобств, показываем заглушку
             Chip chip = new Chip(this);
             chip.setText("Нет информации");
             chip.setClickable(false);
