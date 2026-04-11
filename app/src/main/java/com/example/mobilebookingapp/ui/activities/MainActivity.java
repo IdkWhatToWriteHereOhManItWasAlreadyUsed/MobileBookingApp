@@ -1,340 +1,129 @@
 package com.example.mobilebookingapp.ui.activities;
 
-import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import android.view.View;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import com.example.mobilebookingapp.R;
-import com.example.mobilebookingapp.model.HotelData;
-import com.example.mobilebookingapp.network.HotelsLoader;
-import com.example.mobilebookingapp.caching.CacheManager;
-import com.example.mobilebookingapp.network.NetworkUtils;
-import com.example.mobilebookingapp.utils.ReminderManager;
-import com.example.mobilebookingapp.utils.SortUtils;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
+import com.example.mobilebookingapp.ui.fragments.HotelsFragment;
+import com.example.mobilebookingapp.ui.fragments.TravelFeedFragment;
+import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
-public class MainActivity extends AppCompatActivity {
-    private static final int PERMISSION_REQUEST_CODE = 100;
-    private ReminderManager reminderManager;
-    private RecyclerView recyclerView;
-    private HotelAdapter adapter;
-    private List<HotelData> hotelList;
-    private MaterialButton btnSearch;
-    private MaterialButton btnSort;
-    private CacheManager cacheManager;
-    private SortUtils.SortBy currentSort = SortUtils.SortBy.RATING_DESC; // По умолчанию
-
-    private final ActivityResultLauncher<Intent> searchLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Map<String, String> searchParams =
-                            (Map<String, String>)
-                                    result.getData().getSerializableExtra(SearchActivity.EXTRA_SEARCH_PARAMS);
-
-                    if (searchParams != null) {
-                        performSearchWithParams(searchParams);
-                    }
-                }
-            });
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        mAuth = FirebaseAuth.getInstance();
+
+        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        btnSearch = findViewById(R.id.btnSearch);
-        btnSort = findViewById(R.id.btnSort);
-        recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        reminderManager = new ReminderManager(this);
-        reminderManager.updateLastActiveTime();
+        drawerLayout = findViewById(R.id.drawerLayout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawerLayout, toolbar,
+                R.string.navigation_drawer_open,
+                R.string.navigation_drawer_close
+        );
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(
-                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
-                        PERMISSION_REQUEST_CODE
-                );
-            }
+        navigationView = findViewById(R.id.navigationView);
+        navigationView.setNavigationItemSelectedListener(this);
+
+        updateNavHeader();
+
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.contentFrame, new HotelsFragment())
+                    .commit();
+            navigationView.setCheckedItem(R.id.nav_hotels);
+            setTitle(R.string.hotels);
         }
-
-        // Инициализация кэша
-        cacheManager = new CacheManager(this);
-        hotelList = new ArrayList<>();
-
-        adapter = new HotelAdapter(hotelList, hotel -> {
-            Intent intent = new Intent(MainActivity.this, HotelDetailActivity.class);
-            intent.putExtra("hotel_data", hotel);
-            startActivity(intent);
-        });
-
-        recyclerView.setAdapter(adapter);
-
-        btnSearch.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(this)) {
-                showNoInternetDialog();
-                return;
-            }
-            Intent intent = new Intent(MainActivity.this, SearchActivity.class);
-            searchLauncher.launch(intent);
-        });
-
-        btnSort.setOnClickListener(v -> showSortDialog());
-
-        // Загружаем данные при старте
-        loadInitialData();
     }
 
-    private void showSortDialog() {
-        String[] sortOptions = {
-                SortUtils.getSortDisplayName(SortUtils.SortBy.NAME_ASC),
-                SortUtils.getSortDisplayName(SortUtils.SortBy.NAME_DESC),
-                SortUtils.getSortDisplayName(SortUtils.SortBy.RATING_ASC),
-                SortUtils.getSortDisplayName(SortUtils.SortBy.RATING_DESC)
-        };
+    private void updateNavHeader() {
+        View headerView = navigationView.getHeaderView(0);
+        TextView navUserName = headerView.findViewById(R.id.navUserName);
+        View navLoginButton = headerView.findViewById(R.id.navLoginButton);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Сортировать отели")
-                .setItems(sortOptions, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            currentSort = SortUtils.SortBy.NAME_ASC;
-                            break;
-                        case 1:
-                            currentSort = SortUtils.SortBy.NAME_DESC;
-                            break;
-                        case 2:
-                            currentSort = SortUtils.SortBy.RATING_ASC;
-                            break;
-                        case 3:
-                            currentSort = SortUtils.SortBy.RATING_DESC;
-                            break;
-                    }
-                    applySort();
-                })
-                .show();
-    }
-
-    private void applySort() {
-        if (hotelList.isEmpty()) {
-            Toast.makeText(this, "Нет отелей для сортировки", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        SortUtils.sortHotels(hotelList, currentSort);
-        adapter.notifyDataSetChanged();
-
-        Snackbar.make(findViewById(android.R.id.content),
-                "Отсортировано: " + SortUtils.getSortDisplayName(currentSort),
-                Snackbar.LENGTH_SHORT).show();
-    }
-
-    private void loadInitialData() {
-        List<HotelData> cachedHotels = cacheManager.getHotels();
-        if (!cachedHotels.isEmpty()) {
-            hotelList.clear();
-            hotelList.addAll(cachedHotels);
-            applySort();
-
-            String cacheInfo = "Загружено из кэша";
-            if (cacheManager.isCacheExpired()) {
-                cacheInfo += " (кэш устарел)";
-            }
-        }
-
-        if (NetworkUtils.isNetworkAvailable(this)) {
-            refreshDataFromNetwork();
+        if (mAuth.getCurrentUser() != null) {
+            navUserName.setText(mAuth.getCurrentUser().getEmail());
+            if (navLoginButton != null) navLoginButton.setVisibility(View.GONE);
         } else {
-            if (cachedHotels.isEmpty()) {
-                // Нет ни интернета, ни кэша
-                Toast.makeText(this,
-                        "Нет подключения к интернету и нет сохраненных данных",
-                        Toast.LENGTH_LONG).show();
-            } else {
-                // Показываем уведомление что данные из кэша
-                Snackbar.make(findViewById(android.R.id.content),
-                        "Работаем в оффлайн-режиме. Данные могут быть устаревшими.",
-                        Snackbar.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    private void refreshDataFromNetwork() {
-        HotelsLoader.searchHotelsAsync(null, null, null, null, null, null, 20, null,
-                new HotelsLoader.HotelsCallback() {
-                    @Override
-                    public void onSuccess(List<HotelData> hotels) {
-                        runOnUiThread(() -> {
-                            if (!hotels.isEmpty()) {
-                                hotelList.clear();
-                                hotelList.addAll(hotels);
-                                applySort();
-
-                                cacheManager.saveHotels(hotels);
-                                Toast.makeText(MainActivity.this,
-                                        "Данные обновлены из сети", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        runOnUiThread(() -> {
-                            // Если ошибка, но у нас уже есть кэш - ничего не делаем
-                            if (!cacheManager.hasCache()) {
-                                Toast.makeText(MainActivity.this,
-                                        "Ошибка загрузки: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                });
-    }
-
-    private void performSearchWithParams(Map<String, String> params) {
-        if (!NetworkUtils.isNetworkAvailable(this)) {
-            // Если нет интернета - показываем кэш (если есть)
-            List<HotelData> cachedHotels = cacheManager.getHotels();
-            if (!cachedHotels.isEmpty()) {
-                hotelList.clear();
-                hotelList.addAll(cachedHotels);
-                applySort();
-                Toast.makeText(this, "Оффлайн-режим: показаны кэшированные данные",
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                showNoInternetDialog();
-            }
-            return;
+            navUserName.setText(R.string.guest);
+            if (navLoginButton != null) navLoginButton.setVisibility(View.VISIBLE);
         }
 
-        String city = params.get("city");
-        String country = params.get("country");
-        String countryCode = params.get("country_code");
-        String name = params.get("name");
-        Integer minRating = params.containsKey("min_rating") ?
-                Integer.parseInt(params.get("min_rating")) : null;
-        Integer limit = params.containsKey("limit") ?
-                Integer.parseInt(params.get("limit")) : null;
-
-        Toast.makeText(this, "Поиск...", Toast.LENGTH_SHORT).show();
-
-        HotelsLoader.searchHotelsAsync(city, country, countryCode, name,
-                null, minRating, limit, null, new HotelsLoader.HotelsCallback() {
-                    @Override
-                    public void onSuccess(List<HotelData> hotels) {
-                        runOnUiThread(() -> {
-                            hotelList.clear();
-                            hotelList.addAll(hotels);
-                            applySort();
-
-                            if (!hotels.isEmpty()) {
-                                cacheManager.saveHotels(hotels);
-                            }
-
-                            String message = hotels.isEmpty()
-                                    ? "Ничего не найдено"
-                                    : "Найдено отелей: " + hotels.size();
-                            Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
-                        });
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        runOnUiThread(() -> {
-                            List<HotelData> cachedHotels = cacheManager.getHotels();
-                            if (!cachedHotels.isEmpty()) {
-                                hotelList.clear();
-                                hotelList.addAll(cachedHotels);
-                                applySort();
-                                Toast.makeText(MainActivity.this,
-                                        "Ошибка сети. Показаны кэшированные данные",
-                                        Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(MainActivity.this,
-                                        "Ошибка поиска: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                });
-    }
-
-    private void showNoInternetDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Нет интернета")
-                .setMessage("Для поиска отелей необходимо подключение к интернету. Хотите посмотреть сохраненные данные?")
-                .setPositiveButton("Показать сохраненные данные", (dialog, which) -> {
-                    List<HotelData> cachedHotels = cacheManager.getHotels();
-                    if (!cachedHotels.isEmpty()) {
-                        hotelList.clear();
-                        hotelList.addAll(cachedHotels);
-                        applySort();
-                    } else {
-                        Toast.makeText(this, "Нет сохраненных данных",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Настройки", (dialog, which) -> {
-                    startActivity(new Intent(android.provider.Settings.ACTION_WIFI_SETTINGS));
-                })
-                .setNeutralButton("Отмена", null)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .show();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_settings) {
-            startActivity(new Intent(this, SettingsActivity.class));
-            return true;
+        if (navLoginButton != null) {
+            navLoginButton.setOnClickListener(v -> {
+                startActivity(new Intent(this, AuthActivity.class));
+                drawerLayout.closeDrawer(GravityCompat.START);
+            });
         }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (reminderManager != null) {
-            reminderManager.updateLastActiveTime();
-        }
+        updateNavHeader();
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        if (reminderManager != null) {
-            reminderManager.updateLastActiveTime();
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        Fragment fragment = null;
+        String title = "";
+
+        int id = item.getItemId();
+
+        if (id == R.id.nav_hotels) {
+            fragment = new HotelsFragment();
+            title = getString(R.string.hotels);
+        } else if (id == R.id.nav_travel_feed) {
+            if (mAuth.getCurrentUser() == null) {
+                startActivity(new Intent(this, AuthActivity.class));
+                drawerLayout.closeDrawer(GravityCompat.START);
+                return true;
+            }
+            fragment = new TravelFeedFragment();
+            title = getString(R.string.travel_feed);
+        } else if (id == R.id.nav_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
         }
+
+        if (fragment != null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.contentFrame, fragment)
+                    .commit();
+            setTitle(title);
+        }
+
+        drawerLayout.closeDrawer(GravityCompat.START);
+        return true;
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 }

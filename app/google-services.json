@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "50525894648",
+    "project_id": "mobilebookingapp-4889e",
+    "storage_bucket": "mobilebookingapp-4889e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50525894648:android:d31ffe5343ffed56a1480d",
+        "android_client_info": {
+          "package_name": "com.example.mobilebookingapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXzPXDfdkK58Ovr757YuGrdeeMSt6PswI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

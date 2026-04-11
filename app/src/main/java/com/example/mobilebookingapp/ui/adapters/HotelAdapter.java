@@ -1,4 +1,4 @@
-package com.example.mobilebookingapp.ui.activities;
+package com.example.mobilebookingapp.ui.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
